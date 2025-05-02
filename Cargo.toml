@@ -1,0 +1,40 @@
+[package]
+name = "cohelper"
+version = "0.15.1"
+authors = [
+  "Andrea Fioraldi <andreafioraldi@gmail.com>",
+  "Dominik Maier <domenukk@gmail.com>",
+  "Julius Hohnerlein",
+]
+edition = "2021"
+
+[features]
+default = ["std"]
+std = []
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+debug = true
+
+[dependencies]
+libafl = { path = "../../../../libafl", features = ["concolic_mutation"] }
+libafl_bolts = { path = "../../../../libafl_bolts" }
+libafl_targets = { path = "../../../../libafl_targets", version = "0.15.1" }
+libafl_qemu = { path = "../../../../libafl_qemu", features = [
+  "x86_64",
+  "usermode",
+] }
+clap = { version = "4.5.18", features = ["derive"] }
+log = { version = "0.4.22", features = ["release_max_level_info"] }
+mimalloc = { version = "0.1.43", default-features = false }
+env_logger = "0.11.5"
+nix = { version = "0.29.0", features = ["fs"] }
+
+
+[build-dependencies]
+cc = { version = "1.1.22", features = ["parallel"] }
+cmake = "0.1.51"
+which = "6.0.3"
+symcc_libafl = { path = "../../../../libafl_concolic/symcc_libafl" }
