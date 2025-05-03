@@ -66,8 +66,8 @@ pub const MAX_INPUT_SIZE: usize = 1048576; // 1MB
 pub fn main(){
     let res = match Commandargs::new(env!("CARGO_PKG_NAME"))
         .version(env!("CARGO_PKG_VERSION"))
-        // .author("AFLplusplus team")
-        // .about("LibAFL-based fuzzer with QEMU for Fuzzbench")
+        .author("xingy@bit")
+        .about("libafl qemu with cohelper")
         .arg(
             Arg::new("out")
                 .help("The directory to place finds in ('corpus')")
@@ -85,6 +85,18 @@ pub fn main(){
                 .long("libafl-logfile")
                 .help("Duplicates all output to this file")
                 .default_value("libafl.log"),
+        )
+        .arg(
+            Arg::new("sympath")
+                .long("libafl-sympath")
+                .help("the symcc / symqemu,best absolute path")
+                .required(true),
+        )
+        .arg(
+            Arg::new("symprogram")
+                .long("libafl-symprogram")
+                .help("the test program for symcc / symqemu,best absolute path")
+                .required(true),
         )
         .try_get_matches_from(filter_qemu_args())
     {
@@ -126,11 +138,13 @@ pub fn main(){
         return;
     }
 
-    //let tokens = res.get_one::<String>("tokens").map(PathBuf::from);
-
     let logfile = PathBuf::from(res.get_one::<String>("logfile").unwrap().to_string());
-        
-    fuzz(out_dir, crashes, in_dir, logfile)
+
+    let sympath = res.get_one::<String>("sympath").unwrap().to_string();
+    let symprogram = res.get_one::<String>("symprogram").unwrap().to_string();
+    let symcmd = format!("{} {}", sympath, symprogram);
+
+    fuzz(out_dir, crashes, in_dir, logfile,symcmd)
         .expect("An error occurred while fuzzing");
 }
 
@@ -140,6 +154,7 @@ fn fuzz(
     seed_dir:PathBuf,
     //broker_port:u16,
     logfile:PathBuf,
+    symcmd:String,
 ) -> Result<(),Error> {
     env_logger::init();
     env::remove_var("LD_LIBRARY_PATH");
@@ -369,7 +384,7 @@ fn fuzz(
     );
 
     let sympatch = SymPatchStage::new();
-    let symcc = SymCCStage::new("/hf/symqemu/symqemu_tosmt2_build/qemu-x86_64 /xy/LibAFL/fuzzers/structure_aware/hybrid_helper/fuzzer/symharness".to_string())?;
+    let symcc = SymCCStage::new(symcmd)?;
     let symexten = SymExtensionStage::new()?;
 
     let mut stages = tuple_list!(calibration,power,sympatch,symcc,symexten);
